@@ -4,6 +4,7 @@ import { ResourceService, ServerResponse } from '@sunbird/shared';
 import * as _ from 'lodash-es';
 import { mergeMap, catchError, map } from 'rxjs/operators';
 import { throwError as observableThrowError, of as observableOf, Observable } from 'rxjs';
+import {ContentIDParam } from '../../workspace/interfaces/delteparam';
 /**
  * Base class for workspace module
 */
@@ -16,6 +17,9 @@ export class WorkSpace {
      * Reference for WorkSpaceService
     */
     public workSpaceService: WorkSpaceService;
+    public contentCollections: object;
+    public contentHasCollection: boolean;
+    public collectiondata: any;
     /**
     * Constructor to create injected service(s) object
     * Default method of Draft Component class
@@ -126,4 +130,14 @@ export class WorkSpace {
         return errorMessage;
     }
 
+    isContentCollections(contentId: ContentIDParam): any {
+       return this.workSpaceService.searchContent(contentId);
+    }
+
+    searchContentCollections(collectionId): any {
+       return this.workSpaceService.readContent(collectionId);
+    }
+    getChannelDetails(channelId) {
+        return this.workSpaceService.getChannel(channelId);
+    }
 }

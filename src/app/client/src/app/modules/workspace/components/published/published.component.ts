@@ -11,7 +11,8 @@ import {
 import { WorkSpaceService } from '../../services';
 import * as _ from 'lodash-es';
 import { IImpressionEventInput } from '@sunbird/telemetry';
-import {combineLatest } from 'rxjs';
+import {combineLatest, forkJoin } from 'rxjs';
+import { ContentIDParam } from '../../interfaces/delteparam';
 
 /**
  * Interface for passing the configuartion for modal
@@ -25,11 +26,15 @@ import { SuiModalService, TemplateModalConfig, ModalTemplate } from 'ng2-semanti
 
 @Component({
   selector: 'app-published',
-  templateUrl: './published.component.html'
+  templateUrl: './published.component.html',
+  styleUrls: ['./published.component.scss']
 })
 export class PublishedComponent extends WorkSpace implements OnInit, AfterViewInit {
   @ViewChild('modalTemplate')
   public modalTemplate: ModalTemplate<{ data: string }, string, string>;
+
+  @ViewChild('collectionListModal')
+  public collectionListModal: ModalTemplate<{ data: string }, string, string>;
   /**
   * state for content editior
   */
@@ -127,6 +132,13 @@ export class PublishedComponent extends WorkSpace implements OnInit, AfterViewIn
   queryParams: object;
   query: string;
   sort: object;
+
+  private collectionData: Array<any>;
+  private collectionDetails: any;
+  private showCollectionLoader: boolean;
+  private headers: Array<string>;
+  private currentContentId: ContentIDParam;
+  private deletingContentName: string;
 
   /**
     * Constructor to create injected service(s) object
@@ -273,21 +285,75 @@ export class PublishedComponent extends WorkSpace implements OnInit, AfterViewIn
   */
   contentClick(param) {
     if (param.action.eventName === 'delete') {
-      this.deleteConfirmModal(param.data.metaData.identifier);
+      this.currentContentId = param.data.metaData.identifier;
+      const config = new TemplateModalConfig<{ data: string }, string, string>(this.modalTemplate);
+      config.isClosable = false;
+      config.size = 'small';
+      config.transitionDuration = 0;
+      config.mustScroll = true;
+      this.modalService
+        .open(config);
+      this.showCollectionLoader = false;
     } else {
       this.workSpaceService.navigateToContent(param.data.metaData, this.state);
     }
   }
 
-  public deleteConfirmModal(contentIds) {
-    const config = new TemplateModalConfig<{ data: string }, string, string>(this.modalTemplate);
-    config.isClosable = false;
-    config.size = 'small';
-    config.transitionDuration = 0;
-    config.mustScroll = true;
-    this.modalService
-      .open(config)
-      .onApprove(result => {
+public checkConnectedCollections(modal) {
+    this.showCollectionLoader = false;
+    /*
+    if (!['Resource', 'PracticeResource'].includes(this.deletingContentName)) {
+      this.deleteContent(this.currentContentId, modal);
+      return;
+    }*/
+
+    this.isContentCollections(this.currentContentId)
+      .subscribe((response) => {
+        const count = _.get(response, 'result.count');
+        if (!count) {
+          this.deleteContent(this.currentContentId, modal);
+          return;
+        }
+
+        this.showCollectionLoader = true;
+        const collectionIds = _.get(response, 'result.content[0].collections');
+        this.collectionData = [];
+        this.headers = ['Content Type', 'Board', 'Medium', 'Name', 'Grade Level', 'Subject', 'Channel'];
+
+        forkJoin(_.map(collectionIds, (collectionId: string) => {
+          return this.searchContentCollections(collectionId);
+        })).subscribe((forkResponse) => {
+          _.forEach(forkResponse, readResponse => {
+            const content = _.get(readResponse, 'result.content');
+            if (!content) {
+              return;
+            }
+
+            const obj = _.pick(content, ['contentType', 'board', 'medium', 'name', 'gradeLevel', 'subject', 'channel']);
+
+            this.getChannelDetails(obj.channel)
+            .subscribe((res) => {
+              const channel = _.get(res, 'result.channel');
+              if (!channel) {
+                return;
+              }
+              obj.channel = channel.name;
+              this.collectionData.push(obj);
+            });
+          });
+
+          modal.deny();
+          const collectModalConfig = new TemplateModalConfig<{ data: string }, string, string>(this.collectionListModal);
+          collectModalConfig.isClosable = false;
+          collectModalConfig.mustScroll = true;
+          collectModalConfig.isFullScreen = true;
+          this.modalService
+          .open(collectModalConfig);
+        });
+      });
+  }
+
+  public deleteContent(contentIds, modal) {
         this.showLoader = true;
         this.loaderMessage = {
           'loaderMessage': this.resourceService.messages.stmsg.m0034,
@@ -306,9 +372,7 @@ export class PublishedComponent extends WorkSpace implements OnInit, AfterViewIn
             this.toasterService.success(this.resourceService.messages.fmsg.m0022);
           }
         );
-      })
-      .onDeny(result => {
-      });
+        modal.deny();
   }
 
   /**

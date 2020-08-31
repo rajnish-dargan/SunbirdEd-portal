@@ -56,28 +56,89 @@
 
       <!--Content-->
       <div class="sb-modal-content">
-        <p>{{resourceService?.frmelmnts?.lbl?.deleteconfirm}}</p>
+        <p [class.sb-color-gray-100]="showCollectionLoader">{{resourceService?.frmelmnts?.lbl?.deleteconfirm}}</p>
+        <div class="py-30">
+          <div *ngIf="showCollectionLoader" class="sb-loader sb-gray-loader pb-20"></div>
+        </div>
       </div>
       <!--/Content-->
 
       <!--Actions-->
-      <div class="sb-modal-actions">
-        <button 
-          class="sb-btn sb-btn-normal sb-btn-error" 
-          (click)="modal.approve('approved')" 
-          autofocus
-        >
-          {{resourceService?.frmelmnts?.btn?.yes}}
-        </button>
-        <button 
-          class="sb-btn sb-btn-normal sb-btn-outline-error" 
+      <div class="sb-modal-actions flex-jc-space-between">
+        <div>
+          <button
+          class="sb-btn sb-btn-normal sb-btn-outline-error mr-10"
+          [class.fadInButton]="showCollectionLoader"
           (click)="modal.deny('denied')"
-        >
+          [disabled]="showCollectionLoader"
+          >
           {{resourceService?.frmelmnts?.btn?.no}}
-        </button>
-        
+          </button>
+          <button
+          class="sb-btn sb-btn-normal sb-btn-error ui disabled"
+          [class.fadInButton]="showCollectionLoader"
+          (click)="checkConnectedCollections(modal)"
+          autofocus
+          [disabled]="showCollectionLoader"
+          >
+          {{resourceService?.frmelmnts?.btn?.yes}}
+          </button>
+        </div>
+        <div *ngIf="showCollectionLoader">Scanning for linked content</div>
       </div>
       <!--/Actions-->
+    </div>
+  </div>
+</ng-template>
+<ng-template let-context let-modal="modal" #collectionListModal>
+  <div class="sb-modal">
+    <div class="ui modal visible active">
+      <i class="icon close" (click)="modal.deny('denied')" tabindex="0"></i>
+      <!--Header-->
+        <div class="sb-modal-header">
+        </div>
+      <!--/Header-->
+
+      <!--Content-->
+      <div class="sb-modal-content">
+        <h5 class="font-weight-bold">This content cannot be deleted as it is used in the following</h5>
+        <div class="sb-table-container">
+          <table class="sb-table sb-table-fixed sb-table-lg sb-table-blue-strip">
+            <thead>
+                <th *ngFor = "let column of headers">
+                  {{column | titlecase}}
+                </th>
+            </thead>
+            <tbody>
+                <tr *ngFor = "let row of collectionData">
+                  <!-- <td *ngFor = "let column of headers">
+                    {{row[column]}}
+                  </td> -->
+                  <td>{{row['contentType']}}</td>
+                  <td>{{row['name']}}</td>
+                  <td>{{row['subject']?.join(", ")}}</td>
+                  <td>{{row['gradeLevel']?.join(", ")}}</td>
+                  <td>{{row['medium']?.join(", ")}}</td>
+                  <td>{{row['board']}}</td>
+                  <td>{{row['channel']}}</td>
+                </tr>
+            </tbody>
+          </table>
+      </div>
+      </div>
+      <!--/Content-->
+
+      <!--Actions-->
+      <div class="sb-modal-actions bt-0">
+        <button 
+          class="sb-btn sb-btn-normal sb-btn-primary"
+          (click)="modal.deny('denied')"
+        >
+          Close
+        </button>
+      </div>
+      <!--/Actions-->
+
     </div>
   </div>
 </ng-template>

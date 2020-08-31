@@ -4,8 +4,8 @@ import { map } from 'rxjs/operators';
 import {
   ConfigService, ServerResponse, ICard, NavigationHelperService, ResourceService, BrowserCacheTtlService
 } from '@sunbird/shared';
-import { ContentService, PublicDataService, UserService } from '@sunbird/core';
-import { IDeleteParam } from '../../interfaces/delteparam';
+import { ContentService, PublicDataService, UserService, ActionService } from '@sunbird/core';
+import { IDeleteParam, ContentIDParam } from '../../interfaces/delteparam';
 import { Router } from '@angular/router';
 import * as _ from 'lodash-es';
 import { CacheService } from 'ng2-cache-service';
@@ -20,6 +20,10 @@ export class WorkSpaceService {
   */
   public content: ContentService;
   /**
+    * Reference of actionService
+  */
+  public actionService: ActionService;
+  /**
     * To navigate to other pages
   */
   route: Router;
@@ -33,7 +37,7 @@ export class WorkSpaceService {
     * @param {UserService} userService userService reference
     * @param {HttpClient} http HttpClient reference
   */
-  constructor(config: ConfigService, content: ContentService,
+  constructor(config: ConfigService, content: ContentService, actionService: ActionService,
     route: Router, public navigationHelperService: NavigationHelperService,
     private cacheService: CacheService, private browserCacheTtlService: BrowserCacheTtlService,
     private resourceService: ResourceService, public publicDataService: PublicDataService,
@@ -41,6 +45,7 @@ export class WorkSpaceService {
     this.content = content;
     this.config = config;
     this.route = route;
+    this.actionService = actionService;
   }
   /**
   * deleteContent
@@ -58,7 +63,6 @@ export class WorkSpaceService {
     };
     return this.content.delete(option);
   }
-
 
   /**
  * openContentEditor
@@ -259,4 +263,47 @@ export class WorkSpaceService {
       maxAge: this.browserCacheTtlService.browserCacheTtl
     });
   }
+
+/**
+  * Search Content which are used in some other content/collection
+  * @param {ContentID} requestParam
+  */
+  searchContent(requestparam: ContentIDParam): Observable<ServerResponse> {
+  const option = {
+    url: `${this.config.urlConFig.URLS.SEARCH_CONTENT.SEARCH}`,
+    'data': {
+      'request': {
+          'filters': {
+              'identifier': requestparam
+            },
+            'exists': [ 'collections' ],
+            'fields': [ 'collections' ]
+            }
+        }
+    };
+    return this.actionService.post(option);
+  }
+
+/**
+ * Read Content for iterate/check over the content available
+ * @param {contentId} do_id required for read API
+ */
+  readContent(requestparam: ContentIDParam): Observable<ServerResponse> {
+    const option = {
+      url: `${this.config.urlConFig.URLS.SEARCH_CONTENT.READ}` + '/' + requestparam
+    };
+    return this.actionService.get(option);
+  }
+
+/**
+ * To get channel details
+ * @param {channelId} id required for read API
+ */
+getChannel(channelId): Observable<ServerResponse> {
+  const option = {
+    url: `${this.config.urlConFig.URLS.SEARCH_CONTENT.READ_CHANNEL}` + '/' + channelId
+  };
+  return this.actionService.get(option);
+}
+
 }

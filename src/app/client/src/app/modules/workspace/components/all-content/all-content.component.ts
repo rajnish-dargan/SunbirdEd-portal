@@ -1,5 +1,5 @@
 
-import {combineLatest as observableCombineLatest,  Observable } from 'rxjs';
+import { combineLatest as observableCombineLatest, Observable, forkJoin } from 'rxjs';
 import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { WorkSpace } from '../../classes/workspace';
@@ -14,16 +14,21 @@ import * as _ from 'lodash-es';
 import { IImpressionEventInput } from '@sunbird/telemetry';
 import { SuiModalService, TemplateModalConfig, ModalTemplate } from 'ng2-semantic-ui';
 import { debounceTime, map } from 'rxjs/operators';
+import { ContentIDParam } from '../../interfaces/delteparam';
 
 @Component({
   selector: 'app-all-content',
-  templateUrl: './all-content.component.html'
+  templateUrl: './all-content.component.html',
+  styleUrls: ['./all-content.component.scss']
 })
 
 export class AllContentComponent extends WorkSpace implements OnInit, AfterViewInit {
 
   @ViewChild('modalTemplate')
   public modalTemplate: ModalTemplate<{ data: string }, string, string>;
+
+  @ViewChild('collectionListModal')
+  public collectionListModal: ModalTemplate<{ data: string }, string, string>;
   /**
      * state for content editior
     */
@@ -149,6 +154,15 @@ export class AllContentComponent extends WorkSpace implements OnInit, AfterViewI
   */
   pager: IPagination;
 
+  private collectionData: Array<any>;
+  private collectionDetails: any;
+  private showCollectionLoader: boolean;
+  private headers: Array<string>;
+  private currentContentId: ContentIDParam;
+  private deletingContentName: string;
+  private deleteModal: any;
+
+
   /**
   * To show toaster(error, success etc) after any API calls
   */
@@ -202,7 +216,7 @@ export class AllContentComponent extends WorkSpace implements OnInit, AfterViewI
       this.activatedRoute.queryParams).pipe(
         debounceTime(10),
         map(([params, queryParams]) => ({ params, queryParams })
-      ))
+        ))
       .subscribe(bothParams => {
         if (bothParams.params.pageNumber) {
           this.pageNumber = Number(bothParams.params.pageNumber);
@@ -268,36 +282,95 @@ export class AllContentComponent extends WorkSpace implements OnInit, AfterViewI
       }
     );
   }
-  public deleteConfirmModal(contentIds) {
+
+  public deleteConfirmModal(contentIds, contentType) {
+    this.currentContentId = contentIds;
+    this.deletingContentName = contentType;
+    this.showCollectionLoader = false;
     const config = new TemplateModalConfig<{ data: string }, string, string>(this.modalTemplate);
     config.isClosable = false;
     config.size = 'small';
     config.transitionDuration = 0;
     config.mustScroll = true;
     this.modalService
-      .open(config)
-      .onApprove(result => {
-        this.showLoader = true;
-        this.loaderMessage = {
-          'loaderMessage': this.resourceService.messages.stmsg.m0034,
-        };
-        this.delete(contentIds).subscribe(
-          (data: ServerResponse) => {
-            this.showLoader = false;
-            this.allContent = this.removeAllMyContent(this.allContent, contentIds);
-            if (this.allContent.length === 0) {
-              this.ngOnInit();
+      .open(config);
+  }
+
+  public checkConnectedCollections(modal) {
+    this.deleteModal = modal;
+    this.showCollectionLoader = false;
+    if (!['Resource', 'PracticeResource'].includes(this.deletingContentName)) {
+      this.deleteContent(this.currentContentId);
+      return;
+    }
+
+    this.isContentCollections(this.currentContentId)
+      .subscribe((response) => {
+        const count = _.get(response, 'result.count');
+        if (!count) {
+          this.deleteContent(this.currentContentId);
+          return;
+        }
+
+        this.showCollectionLoader = true;
+        const collectionIds = _.get(response, 'result.content[0].collections');
+        this.collectionData = [];
+        this.headers = ['Content Type', 'Board', 'Medium', 'Name', 'Grade Level', 'Subject', 'Channel'];
+
+        forkJoin(_.map(collectionIds, (collectionId: string) => {
+          return this.searchContentCollections(collectionId);
+        })).subscribe((forkResponse) => {
+          _.forEach(forkResponse, readResponse => {
+            const content = _.get(readResponse, 'result.content');
+            if (!content) {
+              return;
             }
-            this.toasterService.success(this.resourceService.messages.smsg.m0006);
-          },
-          (err: ServerResponse) => {
-            this.showLoader = false;
-            this.toasterService.error(this.resourceService.messages.fmsg.m0022);
-          }
-        );
-      })
-      .onDeny(result => {
+
+            const obj = _.pick(content, ['contentType', 'board', 'medium', 'name', 'gradeLevel', 'subject', 'channel']);
+
+            this.getChannelDetails(obj.channel)
+            .subscribe((res) => {
+              const channel = _.get(res, 'result.channel');
+              if (!channel) {
+                return;
+              }
+              obj.channel = channel.name;
+              this.collectionData.push(obj);
+            });
+          });
+
+          this.deleteModal.deny();
+          const collectModalConfig = new TemplateModalConfig<{ data: string }, string, string>(this.collectionListModal);
+          collectModalConfig.isClosable = false;
+          collectModalConfig.mustScroll = true;
+          collectModalConfig.isFullScreen = true;
+          this.modalService
+          .open(collectModalConfig);
+        });
+
       });
+  }
+
+  deleteContent(contentId) {
+    this.showLoader = true;
+    this.loaderMessage = {
+      'loaderMessage': this.resourceService.messages.stmsg.m0034,
+    };
+    this.delete(contentId).subscribe(
+      (data: ServerResponse) => {
+        this.showLoader = false;
+        this.allContent = this.removeAllMyContent(this.allContent, contentId);
+        if (this.allContent.length === 0) {
+          this.ngOnInit();
+        }
+        this.toasterService.success(this.resourceService.messages.smsg.m0006);
+      },
+      (err: ServerResponse) => {
+        this.showLoader = false;
+        this.toasterService.error(this.resourceService.messages.fmsg.m0022);
+      }
+    );
+    this.deleteModal.deny();
   }
 
   /**
@@ -319,8 +392,8 @@ export class AllContentComponent extends WorkSpace implements OnInit, AfterViewI
 
   contentClick(content) {
     if (_.size(content.lockInfo)) {
-        this.lockPopupData = content;
-        this.showLockedContentModal = true;
+      this.lockPopupData = content;
+      this.showLockedContentModal = true;
     } else {
       const status = content.status.toLowerCase();
       if (status === 'processing') {
@@ -334,11 +407,11 @@ export class AllContentComponent extends WorkSpace implements OnInit, AfterViewI
     }
   }
 
-  public onCloseLockInfoPopup () {
+  public onCloseLockInfoPopup() {
     this.showLockedContentModal = false;
   }
 
-  ngAfterViewInit () {
+  ngAfterViewInit() {
     setTimeout(() => {
       this.telemetryImpression = {
         context: {
