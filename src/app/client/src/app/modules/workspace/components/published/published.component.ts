@@ -133,12 +133,35 @@ export class PublishedComponent extends WorkSpace implements OnInit, AfterViewIn
   query: string;
   sort: object;
 
+   /**
+  * To store all the collection details to be shown in collection modal
+  */
   private collectionData: Array<any>;
-  private collectionDetails: any;
+
+  /**
+  * Flag to show/hide loader on first modal
+  */
   private showCollectionLoader: boolean;
+
+  /**
+  * To define collection modal table header
+  */
   private headers: Array<string>;
+
+  /**
+  * To store deleting content id
+  */
   private currentContentId: ContentIDParam;
-  private deletingContentName: string;
+
+  /**
+  * To store deleteing content type
+  */
+  private deletingContentType: string;
+
+  /**
+   * To store modal object of first yes/No modal
+   */
+  private deleteModal: any;
 
   /**
     * Constructor to create injected service(s) object
@@ -283,7 +306,8 @@ export class PublishedComponent extends WorkSpace implements OnInit, AfterViewIn
   /**
     * This method launch the content editior
   */
-  contentClick(param) {
+  contentClick(param, content) {
+    this.deletingContentType = content.metaData.contentType;
     if (param.action.eventName === 'delete') {
       this.currentContentId = param.data.metaData.identifier;
       const config = new TemplateModalConfig<{ data: string }, string, string>(this.modalTemplate);
@@ -299,61 +323,69 @@ export class PublishedComponent extends WorkSpace implements OnInit, AfterViewIn
     }
   }
 
-public checkConnectedCollections(modal) {
+  /**
+  * This method checks whether deleting content is linked to any collections, if linked to collection displays collection list modal.
+  */
+  public checkLinkedCollections(modal) {
+    this.deleteModal = modal;
     this.showCollectionLoader = false;
-    /*
-    if (!['Resource', 'PracticeResource'].includes(this.deletingContentName)) {
-      this.deleteContent(this.currentContentId, modal);
+    if (['Course', 'TextBook', 'Textbook', 'Collection', 'LessonPlan', 'Lessonplan'].includes(this.deletingContentType)) {
+      this.deleteContent(this.currentContentId);
       return;
-    }*/
+    }
 
-    this.isContentCollections(this.currentContentId)
+    this.getLinkedCollections(this.currentContentId)
       .subscribe((response) => {
         const count = _.get(response, 'result.count');
         if (!count) {
-          this.deleteContent(this.currentContentId, modal);
+          this.deleteContent(this.currentContentId);
           return;
         }
-
         this.showCollectionLoader = true;
-        const collectionIds = _.get(response, 'result.content[0].collections');
-        this.collectionData = [];
-        this.headers = ['Content Type', 'Board', 'Medium', 'Name', 'Grade Level', 'Subject', 'Channel'];
+        const collections = _.get(response, 'result.content', []);
 
-        forkJoin(_.map(collectionIds, (collectionId: string) => {
-          return this.searchContentCollections(collectionId);
-        })).subscribe((forkResponse) => {
-          _.forEach(forkResponse, readResponse => {
-            const content = _.get(readResponse, 'result.content');
-            if (!content) {
-              return;
-            }
-
-            const obj = _.pick(content, ['contentType', 'board', 'medium', 'name', 'gradeLevel', 'subject', 'channel']);
-
-            this.getChannelDetails(obj.channel)
-            .subscribe((res) => {
-              const channel = _.get(res, 'result.channel');
-              if (!channel) {
-                return;
-              }
-              obj.channel = channel.name;
-              this.collectionData.push(obj);
+        const channels = _.map(collections, (collection) => {
+          return _.get(collection, 'channel');
+        });
+        const channelMapping = {};
+        forkJoin(_.map(channels, (channel: string) => {
+            return this.getChannelDetails(channel);
+          })).subscribe((forkResponse) => {
+            this.collectionData = [];
+            _.forEach(forkResponse, channelResponse => {
+              const channelId = _.get(channelResponse, 'result.channel.code');
+              const channelName = _.get(channelResponse, 'result.channel.name');
+              channelMapping[channelId] = channelName;
             });
+
+            _.forEach(collections, collection => {
+              const obj = _.pick(collection, ['contentType', 'board', 'medium', 'name', 'gradeLevel', 'subject', 'channel']);
+              obj['channel'] = channelMapping[obj.channel];
+              this.collectionData.push(obj);
           });
 
-          modal.deny();
+          this.headers = ['Content Type', 'Board', 'Medium', 'Name', 'Grade Level', 'Subject', 'Channel'];
+          this.deleteModal.deny();
           const collectModalConfig = new TemplateModalConfig<{ data: string }, string, string>(this.collectionListModal);
           collectModalConfig.isClosable = false;
           collectModalConfig.mustScroll = true;
           collectModalConfig.isFullScreen = true;
           this.modalService
-          .open(collectModalConfig);
+            .open(collectModalConfig);
+          },
+          (error) => {
+            console.log(error);
+          });
+        },
+        (error) => {
+          console.log(error);
         });
-      });
   }
 
-  public deleteContent(contentIds, modal) {
+  /**
+  * This method deletes content using the content id.
+  */
+  public deleteContent(contentIds) {
         this.showLoader = true;
         this.loaderMessage = {
           'loaderMessage': this.resourceService.messages.stmsg.m0034,
@@ -372,7 +404,7 @@ public checkConnectedCollections(modal) {
             this.toasterService.success(this.resourceService.messages.fmsg.m0022);
           }
         );
-        modal.deny();
+        this.deleteModal.deny();
   }
 
   /**

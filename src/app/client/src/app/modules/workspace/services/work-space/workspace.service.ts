@@ -273,12 +273,10 @@ export class WorkSpaceService {
     url: `${this.config.urlConFig.URLS.SEARCH_CONTENT.SEARCH}`,
     'data': {
       'request': {
-          'filters': {
-              'identifier': requestparam
-            },
-            'exists': [ 'collections' ],
-            'fields': [ 'collections' ]
-            }
+        'filters': {
+            'childNodes': [requestparam]
+          }
+        }
         }
     };
     return this.actionService.post(option);

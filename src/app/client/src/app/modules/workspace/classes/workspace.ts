@@ -130,7 +130,7 @@ export class WorkSpace {
         return errorMessage;
     }
 
-    isContentCollections(contentId: ContentIDParam): any {
+    getLinkedCollections(contentId: ContentIDParam): any {
        return this.workSpaceService.searchContent(contentId);
     }
 

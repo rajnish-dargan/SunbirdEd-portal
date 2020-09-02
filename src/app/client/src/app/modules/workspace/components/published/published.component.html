@@ -17,7 +17,7 @@
   <div class="twelve wide column" [appTelemetryImpression]="telemetryImpression">
     <div class="ui stackable three column grid" in-view-container (inview)="inview($event)" [throttle]="[1000]" [trigger]="publishedContent">
       <div in-view-item *ngFor="let content of publishedContent;let i = index;" [id]="i" [data]="content" class="column py-5 pl-10">
-       <app-card-creation [data]="content" (clickEvent)="contentClick($event)"></app-card-creation>
+       <app-card-creation [data]="content" (clickEvent)="contentClick($event,content)"></app-card-creation>
       </div>
     </div>
     <div *ngIf="noResult">
@@ -77,7 +77,7 @@
           <button
           class="sb-btn sb-btn-normal sb-btn-error ui disabled"
           [class.fadInButton]="showCollectionLoader"
-          (click)="checkConnectedCollections(modal)"
+          (click)="checkLinkedCollections(modal)"
           autofocus
           [disabled]="showCollectionLoader"
           >
@@ -111,15 +111,12 @@
             </thead>
             <tbody>
                 <tr *ngFor = "let row of collectionData">
-                  <!-- <td *ngFor = "let column of headers">
-                    {{row[column]}}
-                  </td> -->
                   <td>{{row['contentType']}}</td>
-                  <td>{{row['name']}}</td>
-                  <td>{{row['subject']?.join(", ")}}</td>
-                  <td>{{row['gradeLevel']?.join(", ")}}</td>
-                  <td>{{row['medium']?.join(", ")}}</td>
                   <td>{{row['board']}}</td>
+                  <td>{{row['medium']?.join(", ") || '-'}}</td>
+                  <td>{{row['name']}}</td>
+                  <td>{{row['gradeLevel']?.join(", ") || '-'}}</td>
+                  <td>{{row['subject']?.join(", ") || '-'}}</td>
                   <td>{{row['channel']}}</td>
                 </tr>
             </tbody>

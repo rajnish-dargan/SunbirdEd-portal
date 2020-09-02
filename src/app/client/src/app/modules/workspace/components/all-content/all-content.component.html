@@ -107,7 +107,7 @@
               <button
                 class="sb-btn sb-btn-normal sb-btn-error ui disabled"
                 [class.fadInButton]="showCollectionLoader"
-                (click)="checkConnectedCollections(modal)"
+                (click)="checkLinkedCollections(modal)"
                 autofocus
                 [disabled]="showCollectionLoader"
               >
@@ -143,15 +143,12 @@
               </thead>
               <tbody>
                   <tr *ngFor = "let row of collectionData">
-                    <!-- <td *ngFor = "let column of headers">
-                      {{row[column]}}
-                    </td> -->
                     <td>{{row['contentType']}}</td>
-                    <td>{{row['name']}}</td>
-                    <td>{{row['subject']?.join(", ")}}</td>
-                    <td>{{row['gradeLevel']?.join(", ")}}</td>
-                    <td>{{row['medium']?.join(", ")}}</td>
                     <td>{{row['board']}}</td>
+                    <td>{{row['medium']?.join(", ") || '-'}}</td>
+                    <td>{{row['name']}}</td>
+                    <td>{{row['gradeLevel']?.join(", ") || '-'}}</td>
+                    <td>{{row['subject']?.join(", ") || '-'}}</td>
                     <td>{{row['channel']}}</td>
                   </tr>
               </tbody>
