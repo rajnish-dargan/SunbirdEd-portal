@@ -357,7 +357,7 @@ export class AllContentComponent extends WorkSpace implements OnInit, AfterViewI
               this.collectionData.push(obj);
           });
 
-          this.headers = ['Content Type', 'Board', 'Medium', 'Name', 'Grade Level', 'Subject', 'Channel'];
+          this.headers = ['Type', 'Name', 'Subject', 'Grade', 'Medium', 'Board', 'Tenant Name'];
           this.deleteModal.deny();
           const collectModalConfig = new TemplateModalConfig<{ data: string }, string, string>(this.collectionListModal);
           collectModalConfig.isClosable = false;

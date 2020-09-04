@@ -112,11 +112,11 @@
             <tbody>
                 <tr *ngFor = "let row of collectionData">
                   <td>{{row['contentType']}}</td>
-                  <td>{{row['board']}}</td>
-                  <td>{{row['medium']?.join(", ") || '-'}}</td>
                   <td>{{row['name']}}</td>
-                  <td>{{row['gradeLevel']?.join(", ") || '-'}}</td>
                   <td>{{row['subject']?.join(", ") || '-'}}</td>
+                  <td>{{row['gradeLevel']?.join(", ") || '-'}}</td>
+                  <td>{{row['medium']?.join(", ") || '-'}}</td>
+                  <td>{{row['board']}}</td>
                   <td>{{row['channel']}}</td>
                 </tr>
             </tbody>
