@@ -309,7 +309,6 @@
     },
     "SEARCH_CONTENT" : {
       "SEARCH": "composite/v3/search",
-      "READ": "content/v3/read",
       "READ_CHANNEL": "channel/v3/read"
     }
   }
