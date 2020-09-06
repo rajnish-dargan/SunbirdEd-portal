@@ -283,17 +283,6 @@ export class WorkSpaceService {
   }
 
 /**
- * Read Content for iterate/check over the content available
- * @param {contentId} do_id required for read API
- */
-  readContent(requestparam: ContentIDParam): Observable<ServerResponse> {
-    const option = {
-      url: `${this.config.urlConFig.URLS.SEARCH_CONTENT.READ}` + '/' + requestparam
-    };
-    return this.actionService.get(option);
-  }
-
-/**
  * To get channel details
  * @param {channelId} id required for read API
  */

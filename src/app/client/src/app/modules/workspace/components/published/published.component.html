@@ -84,58 +84,46 @@
           {{resourceService?.frmelmnts?.btn?.yes}}
           </button>
         </div>
-        <div *ngIf="showCollectionLoader">Scanning for linked content</div>
+        <div *ngIf="showCollectionLoader">{{resourceService?.frmelmnts?.lbl?.scanningLinkedCollection}}</div>
       </div>
       <!--/Actions-->
     </div>
   </div>
 </ng-template>
-<ng-template let-context let-modal="modal" #collectionListModal>
-  <div class="sb-modal">
-    <div class="ui modal visible active">
-      <i class="icon close" (click)="modal.deny('denied')" tabindex="0"></i>
-      <!--Header-->
-        <div class="sb-modal-header">
-        </div>
-      <!--/Header-->
-
-      <!--Content-->
-      <div class="sb-modal-content">
-        <h5 class="font-weight-bold">This content cannot be deleted as it is used in the following</h5>
-        <div class="sb-table-container">
-          <table class="sb-table sb-table-fixed sb-table-lg sb-table-blue-strip">
-            <thead>
-                <th *ngFor = "let column of headers">
-                  {{column | titlecase}}
-                </th>
-            </thead>
-            <tbody>
-                <tr *ngFor = "let row of collectionData">
-                  <td>{{row['contentType']}}</td>
-                  <td>{{row['name']}}</td>
-                  <td>{{row['subject']?.join(", ") || '-'}}</td>
-                  <td>{{row['gradeLevel']?.join(", ") || '-'}}</td>
-                  <td>{{row['medium']?.join(", ") || '-'}}</td>
-                  <td>{{row['board']}}</td>
-                  <td>{{row['channel']}}</td>
-                </tr>
-            </tbody>
-          </table>
-      </div>
-      </div>
-      <!--/Content-->
-
-      <!--Actions-->
-      <div class="sb-modal-actions bt-0">
-        <button 
-          class="sb-btn sb-btn-normal sb-btn-primary"
-          (click)="modal.deny('denied')"
-        >
-          Close
-        </button>
-      </div>
-      <!--/Actions-->
-
-    </div>
-  </div>
-</ng-template>
+<sui-modal *ngIf="collectionListModal" [mustScroll]="true" [isClosable]="true" [transitionDuration]="0" [size]="'large'"
+class="sb-modal custom-lg-modal" (dismissed)="this.selectChapter = false" #modal>
+		<div class="sb-modal-header">
+		</div>
+		<div class="sb-modal-content">
+      <h5 class="font-weight-bold" style="color: red;">{{resourceService?.frmelmnts?.lbl?.linkedContentErrorMessage}}</h5>
+			<div class="sb-table-responsive">
+				<table class="sb-table sb-table-striped sb-table-sortable sb-table-blue-strip">
+					<thead>
+            <th class="w-10">{{headers.type}}</th>
+            <th class="w-30">{{headers.name}}</th>
+            <th class="w-10">{{headers.subject}}</th>
+            <th class="w-10">{{headers.grade}}</th>
+            <th class="w-10">{{headers.medium}}</th>
+            <th class="w-10">{{headers.board}}</th>
+            <th class="w-20">{{headers.channel}}</th>
+          </thead>
+          <tbody>
+            <tr *ngFor = "let row of collectionData">
+              <td class="white-space-inherit">{{row['contentType']}}</td>
+              <td class="white-space-inherit font-weight-bold">{{row['name']}}</td>
+              <td class="white-space-inherit">{{row['subject']?.join(", ") || '-'}}</td>
+              <td class="white-space-inherit">{{row['gradeLevel']?.join(", ") || '-'}}</td>
+              <td class="white-space-inherit">{{row['medium']?.join(", ") || '-'}}</td>
+              <td class="white-space-inherit">{{row['board']}}</td>
+              <td class="white-space-inherit">{{row['channel']}}</td>
+            </tr>
+          </tbody>
+        </table>
+			</div>
+		</div>
+		<div class="sb-modal-actions">
+		<button class="sb-btn sb-btn-normal sb-btn-primary" (click)="modal.deny('denied')">
+			{{resourceService?.frmelmnts?.btn?.close}}
+		</button>
+		</div>
+</sui-modal>

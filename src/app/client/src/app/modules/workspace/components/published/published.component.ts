@@ -11,14 +11,14 @@ import {
 import { WorkSpaceService } from '../../services';
 import * as _ from 'lodash-es';
 import { IImpressionEventInput } from '@sunbird/telemetry';
-import {combineLatest, forkJoin } from 'rxjs';
+import { combineLatest, forkJoin } from 'rxjs';
 import { ContentIDParam } from '../../interfaces/delteparam';
 
 /**
  * Interface for passing the configuartion for modal
 */
 
-import { SuiModalService, TemplateModalConfig, ModalTemplate } from 'ng2-semantic-ui';
+import { SuiModalService, TemplateModalConfig, ModalTemplate, ModalSize } from 'ng2-semantic-ui';
 
 /**
  * The published  component search for all the published component
@@ -33,8 +33,6 @@ export class PublishedComponent extends WorkSpace implements OnInit, AfterViewIn
   @ViewChild('modalTemplate')
   public modalTemplate: ModalTemplate<{ data: string }, string, string>;
 
-  @ViewChild('collectionListModal')
-  public collectionListModal: ModalTemplate<{ data: string }, string, string>;
   /**
   * state for content editior
   */
@@ -146,7 +144,7 @@ export class PublishedComponent extends WorkSpace implements OnInit, AfterViewIn
   /**
   * To define collection modal table header
   */
-  private headers: Array<string>;
+  private headers: any;
 
   /**
   * To store deleting content id
@@ -162,6 +160,11 @@ export class PublishedComponent extends WorkSpace implements OnInit, AfterViewIn
    * To store modal object of first yes/No modal
    */
   private deleteModal: any;
+
+  /**
+   * To show/hide collection modal
+   */
+  private collectionListModal = false;
 
   /**
     * Constructor to create injected service(s) object
@@ -333,7 +336,6 @@ export class PublishedComponent extends WorkSpace implements OnInit, AfterViewIn
       this.deleteContent(this.currentContentId);
       return;
     }
-
     this.getLinkedCollections(this.currentContentId)
       .subscribe((response) => {
         const count = _.get(response, 'result.count');
@@ -364,20 +366,25 @@ export class PublishedComponent extends WorkSpace implements OnInit, AfterViewIn
               this.collectionData.push(obj);
           });
 
-          this.headers = ['Type', 'Name', 'Subject', 'Grade', 'Medium', 'Board', 'Tenant Name'];
+          this.headers = {
+             type: 'Type',
+             name: 'Name',
+             subject: 'Subject',
+             grade: 'Grade',
+             medium: 'Medium',
+             board: 'Board',
+             channel: 'Tenant Name'
+             };
           this.deleteModal.deny();
-          const collectModalConfig = new TemplateModalConfig<{ data: string }, string, string>(this.collectionListModal);
-          collectModalConfig.isClosable = false;
-          collectModalConfig.mustScroll = true;
-          collectModalConfig.isFullScreen = true;
-          this.modalService
-            .open(collectModalConfig);
+          this.collectionListModal = true;
           },
           (error) => {
+           this.toasterService.error(this.resourceService.messages.emsg.m0014);
             console.log(error);
           });
         },
         (error) => {
+         this.toasterService.error(this.resourceService.messages.emsg.m0014);
           console.log(error);
         });
   }

@@ -41,9 +41,21 @@
                 }
         }
 }
+
 .bt-0{
         border-top: none;;
 }
+
 .fadInButton{
         opacity:0.5 !important;
+}
+
+.white-space-inherit {
+        white-space: inherit !important;
+        word-wrap: break-word;
+        max-width: 1px;
+}
+
+.max-h-360 {
+        max-height:360px;
 }

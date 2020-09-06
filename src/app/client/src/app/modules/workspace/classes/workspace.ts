@@ -134,9 +134,6 @@ export class WorkSpace {
        return this.workSpaceService.searchContent(contentId);
     }
 
-    searchContentCollections(collectionId): any {
-       return this.workSpaceService.readContent(collectionId);
-    }
     getChannelDetails(channelId) {
         return this.workSpaceService.getChannel(channelId);
     }
