@@ -114,6 +114,8 @@ export class DataDrivenComponent extends WorkSpace implements OnInit, OnDestroy,
   public enableCreateButton = false;
 
   public unsubscribe = new Subject<void>();
+
+  public isSubmit = false;
   constructor(
     public searchService: SearchService,
     public workSpaceService: WorkSpaceService,
@@ -282,10 +284,19 @@ export class DataDrivenComponent extends WorkSpace implements OnInit, OnDestroy,
     return requestData;
   }
 
-  createContent() {
+  createContent(modal) {
+    let requiredFields = [];
+    requiredFields = _.map(_.filter(this.formFieldProperties, { 'required': true }), field => field.code );
     const requestData = {
       content: this.generateData(_.pickBy(this.formData.formInputData))
     };
+    for (let i = 0; i < requiredFields.length; i++) {
+      if (_.isUndefined(requestData.content[requiredFields[i]])) {
+        this.toasterService.error(this.resourceService.messages.fmsg.m0101);
+        return;
+      }
+    }
+    modal.deny();
     if (this.contentType === 'studymaterial' || this.contentType === 'assessment') {
       this.editorService.create(requestData).subscribe(res => {
         this.createLockAndNavigateToEditor({identifier: res.result.content_id});
